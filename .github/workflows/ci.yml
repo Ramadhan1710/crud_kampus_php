@@ -2,9 +2,9 @@ name: CI/CD PHP Docker
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build_and_test:
@@ -14,6 +14,13 @@ jobs:
       # 1️⃣ Ambil kode dari repository
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Create .env file from GitHub Secrets
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
       # 2️⃣ Pastikan Docker Compose tersedia
       - name: Check Docker Compose version
