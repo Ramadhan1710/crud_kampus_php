@@ -1,0 +1,52 @@
+name: CI/CD PHP Docker
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Ambil kode dari repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Pastikan Docker Compose tersedia
+      - name: Check Docker Compose version
+        run: docker-compose version || docker compose version
+
+      # 3️⃣ Build dan jalankan container Docker
+      - name: Build and start containers
+        run: docker compose up -d --build
+
+      # 4️⃣ Tunggu MySQL siap
+      - name: Wait for MySQL to be ready
+        run: |
+          echo "Waiting for MySQL to start..."
+          sleep 20
+
+      # 5️⃣ Tampilkan container yang berjalan (debug)
+      - name: List running containers
+        run: docker ps -a
+
+      # 6️⃣ Cek apakah container PHP hidup
+      - name: Check PHP container
+        run: docker exec php_web php -v
+
+      # 7️⃣ Tes koneksi PHP ke MySQL (pakai Secrets)
+      - name: Check MySQL connection
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: docker exec php_web php -r "mysqli_connect('${DB_HOST}', '${DB_USER}', '${DB_PASS}', '${DB_NAME}') or die('MySQL connection failed'); echo 'MySQL connected successfully';"
+
+      # 8️⃣ Matikan container & bersihkan resource
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
