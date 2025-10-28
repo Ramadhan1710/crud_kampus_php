@@ -8,15 +8,14 @@ services:
       - ./src:/var/www/html
     depends_on:
       - db
+    env_file:
+      - .env
 
   db:
     image: mysql:8.0
     container_name: php_db
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: kampus
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin123
+    env_file:
+      - .env
     ports:
       - "3306:3306"
     volumes:

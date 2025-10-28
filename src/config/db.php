@@ -1,9 +1,9 @@
 <?php
 // Simple PDO database connection (sesuaikan credential bila perlu)
-$DB_HOST = 'db';
-$DB_NAME = 'kampus';
-$DB_USER = 'admin';
-$DB_PASS = 'admin123';
+$DB_HOST = getenv('DB_HOST');
+$DB_NAME = getenv('DB_NAME');
+$DB_USER = getenv('DB_USER');
+$DB_PASS = getenv('DB_PASS');
 
 try {
    $pdo = new PDO("mysql:host={$DB_HOST};dbname={$DB_NAME};charset=utf8mb4", $DB_USER, $DB_PASS, [
