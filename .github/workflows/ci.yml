@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "Waiting for MySQL..."
           for i in {1..12}; do
-            if docker exec php_web mysqladmin ping -h "$DB_HOST" --silent; then
+            if docker exec php_db mysqladmin ping -h "$DB_HOST" --silent; then
               echo "MySQL ready!"
               break
             fi
