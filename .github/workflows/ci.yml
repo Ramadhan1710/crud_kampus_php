@@ -7,15 +7,36 @@ on:
     branches: [main]
 
 jobs:
-  build_and_test:
-    runs-on: ubuntu-latest
-
+  build:
+    runs-on : ubuntu-latest
+    outputs:
+      container_name: php_web
     steps:
-      # 1️⃣ Ambil kode dari repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file from GitHub Secrets
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker containers
+        run: docker compose build
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env from GitHub Secrets
         run: |
           echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
           echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
@@ -26,34 +47,27 @@ jobs:
           echo "DB_USER=${{ secrets.DB_USER }}" >> .env
           echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
 
-      # 2️⃣ Pastikan Docker Compose tersedia
-      - name: Check Docker Compose version
-        run: docker-compose version || docker compose version
+      - name: Start containers
+        run: docker compose up -d
 
-      # 3️⃣ Build dan jalankan container Docker
-      - name: Build and start containers
-        run: docker compose up -d --build
-
-      # 4️⃣ Tunggu MySQL siap
-      - name: Wait for MySQL to be ready
+      - name: Wait for MySQL dynamically
         run: |
-          echo "Waiting for MySQL to start..."
-          sleep 20
+          echo "Waiting for MySQL..."
+          for i in {1..12}; do
+            if docker exec php_web mysqladmin ping -h "$DB_HOST" --silent; then
+              echo "MySQL ready!"
+              break
+            fi
+            echo "Waiting 5s..."
+            sleep 5
+          done
 
-      # 5️⃣ Tampilkan container yang berjalan (debug)
-      - name: List running containers
-        run: docker ps -a
-
-      # 6️⃣ Cek apakah container PHP hidup
       - name: Check PHP container
         run: docker exec php_web php -v
 
-      # 7️⃣ Tes koneksi PHP ke MySQL (pakai Secrets)
       - name: Check MySQL connection
         run: docker exec php_web php -r "mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')) or die('MySQL connection failed'); echo 'MySQL connected successfully';"
 
-
-      # 8️⃣ Matikan container & bersihkan resource
-      - name: Stop containers
+      - name: Stop containers (cleanup)
         if: always()
         run: docker compose down -v
