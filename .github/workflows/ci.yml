@@ -17,10 +17,14 @@ jobs:
 
       - name: Create .env file from GitHub Secrets
         run: |
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
           echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
           echo "DB_USER=${{ secrets.DB_USER }}" >> .env
           echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
       # 2️⃣ Pastikan Docker Compose tersedia
       - name: Check Docker Compose version
@@ -46,12 +50,7 @@ jobs:
 
       # 7️⃣ Tes koneksi PHP ke MySQL (pakai Secrets)
       - name: Check MySQL connection
-        run: |
-          docker exec -e DB_HOST=${{ secrets.DB_HOST }} \
-                -e DB_USER=${{ secrets.DB_USER }} \
-                -e DB_PASS=${{ secrets.DB_PASS }} \
-                -e DB_NAME=${{ secrets.DB_NAME }} \
-                php_web php -r "mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')) or die('MySQL connection failed'); echo 'MySQL connected successfully';"
+        run: docker exec php_web php -r "mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME')) or die('MySQL connection failed'); echo 'MySQL connected successfully';"
 
 
       # 8️⃣ Matikan container & bersihkan resource
