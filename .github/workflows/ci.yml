@@ -22,9 +22,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            buildx-
+
+      - name: Build Docker containers with cache
+        run: |
+          docker buildx build \
+            --cache-to=type=local,dest=/tmp/.buildx-cache \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            -f Dockerfile \
+            -t php_web:latest \
+            .
 
       - name: Build Docker containers
         run: docker compose build
@@ -54,7 +63,7 @@ jobs:
         run: |
           echo "Waiting for MySQL..."
           for i in {1..12}; do
-            if docker exec php_web mysqladmin ping -h "$DB_HOST" --silent; then
+            if docker exec php_web php -r "mysqli_connect(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));" 2>/dev/null; then
               echo "MySQL ready!"
               break
             fi
